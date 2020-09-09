@@ -1,5 +1,6 @@
 package dnarecognizer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import dnarecognizer.models.DNAChain;
@@ -27,23 +28,24 @@ public class DNARecognizer {
     // in range 8-10 nucleotides
     private static final int OLIGONUCLEOTIDE_SIZE = 8;
     private static final int POPULATION_SIZE = 100;
-    private static final int EXPANDED_POPULATION_SIZE = 150;
+    private static final int EXPANDED_POPULATION_SIZE = 400;
     private static final int CHILDREN_NO_PER_ONE_MATCH = 4;
     private static final double COPIED_PERCENT_OF_DNA = 40.0d;
     private static final Random GENERATOR = new Random();
     private static final Selector SELECTOR = new Selector(POPULATION_SIZE);
+    private static final DNAChainGenerator DNA_CHAIN_GENERATOR = new DNAChainGenerator();
 
     /**
      * selecting and crossing members of population,
      * then adding results to our population
      * @param population all possible results of our metaheuristic
      */
-    public static void crossover(ArrayList<DNAChain> population) {
+    public static ArrayList<DNAChain> crossover(ArrayList<DNAChain> population) {
         int breedNo = EXPANDED_POPULATION_SIZE - population.size();
         int groupSize = POPULATION_SIZE / 20;
-        ArrayList<DNAChain> group = new ArrayList<>();
         DNAChain member1, member2;
         while(breedNo > 0){
+            ArrayList<DNAChain> group = new ArrayList<>();
 
             //select members to breed
             for(int i = 0; i < groupSize; i++)
@@ -59,11 +61,15 @@ public class DNARecognizer {
                 population.add(crossTwoMembers(member2, member1, COPIED_PERCENT_OF_DNA));
             }
             //add one more child, if there was odd amount of children expected
-            if(CHILDREN_NO_PER_ONE_MATCH % 2 == 0)
+            if(CHILDREN_NO_PER_ONE_MATCH % 2 == 1)
                 population.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
 
             breedNo -= CHILDREN_NO_PER_ONE_MATCH;
         }
+        for(DNAChain D: population){
+            D.countFitVal();
+        }
+        return population;
     }
 
     /**
@@ -144,10 +150,10 @@ public class DNARecognizer {
         for(DNAChain member = iter.next();
             iter.hasNext() && optimumNo > 3;
             member = iter.next()){
-            if(optimumNo > POPULATION_SIZE / 5)
-                shufflingDegree = Math.max(100.0d, shufflingDegree + 70.0d);
-            else
-                shufflingDegree = Math.max(100.0d, shufflingDegree + 30.0d);
+//            if(optimumNo > POPULATION_SIZE / 5)
+//                shufflingDegree = Math.max(100.0d, shufflingDegree + 70.0d);
+//            else
+//                shufflingDegree = Math.max(100.0d, shufflingDegree + 30.0d);
             mutateMemberByShuffling(member, shufflingDegree);
             optimumNo--;
         }
@@ -163,6 +169,7 @@ public class DNARecognizer {
         int shufflingAmount =
                 (int) Math.ceil(shufflingDegree *
                         (oliginucleotides.size() / 100.0d));
+        //System.out.println(oliginucleotides.size() +" <- size | amount -> "+ shufflingAmount + " Shuffleingdegree: " + shufflingDegree);
         int shufflingBegin = GENERATOR.nextInt(
                 oliginucleotides.size() - shufflingAmount);
         List<Oligonucleotide> oligToShuffle = oliginucleotides
@@ -239,11 +246,39 @@ public class DNARecognizer {
     }
 
     /**
+     * for now prints fit value of first DNA chain in curent population and at the end shows best (for fitValue) DNA chain its lenght, all nucleodies in string and all oligonucleotides separatly.
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        ArrayList<DNAChain> population = new ArrayList<>(EXPANDED_POPULATION_SIZE);
+        long startTime = System.currentTimeMillis();
+        ArrayList<DNAChain> population;
+        population = DNA_CHAIN_GENERATOR.Create(DNA_SIZE,OLIGONUCLEOTIDE_SIZE,POPULATION_SIZE,"src/main/resources/SampleDNA.txt");
+        int max = 0;
+        DNAChain bestchain = new DNAChain();
+        for (int i=0;i<500;i++){
+            for(int j=0;j<population.size();j++){
+                if(j<1)
+                System.out.println("Fit Value (first): " + population.get(j).getFitVal());
+                if(population.get(j).getFitVal() > population.get(max).getFitVal()) {
+                    max = j;
+                    bestchain = population.get(max);
+                }
+            }
+            crossover(population);
+            select(population,i/5);
+            mutateIfLocalOptimum(population,4);
+            //System.out.println("Time by "+ i + " : "+(System.currentTimeMillis()-startTime)+"ms");
+        }
+        //mutateMemberByAdding(population.get(0),20);
+        for(int i = 0; i<bestchain.getOligonucleotides().size();i++){
+            System.out.println(bestchain.getOligonucleotides().get(i).getNucleotides());
+        }
+        System.out.println("Best so far: " + bestchain.getFitVal());
+        System.out.println("Oligo size: " + bestchain.getOligonucleotides().size());
+        System.out.println("DNA: " + bestchain.toStringBuilder());
+        System.out.println("DNA lenght: " + bestchain.toStringBuilder().length());
 
+        System.out.println("Time taken: "+(System.currentTimeMillis()-startTime)+"ms");
     }
 
 
