@@ -49,7 +49,6 @@ public class DNAChainGenerator {
         for (int i = 0; i < DNA.length()-OLIGONUCLEOTIDE_SIZE+1; i++){
             hash_Set.add(DNA.substring(i,i+OLIGONUCLEOTIDE_SIZE));
         }
-        System.out.println("-----------------  Hashsize: "+hash_Set.size());
         hash_Set.remove(new StringBuilder(DNA.substring(0,OLIGONUCLEOTIDE_SIZE)));
 
         Set<Oligonucleotide> olig_Set = new HashSet<>();
@@ -59,14 +58,38 @@ public class DNAChainGenerator {
             olig_Set.add(oligo);
         }
         ArrayList<DNAChain> population = new ArrayList<>(POPULATION_SIZE);
-        for(int i = 0; i < POPULATION_SIZE;i++){
+        for(int i = 0; i < POPULATION_SIZE;i++) {
             DNAChain Chain = new DNAChain();
-            ArrayList<Oligonucleotide> Olist = new ArrayList<>(olig_Set);
-            Collections.shuffle(Olist);
-            Olist.add(0,first);
+            ArrayList<Oligonucleotide> Olig_To_Take = new ArrayList<>(olig_Set); // list of Oligonucleotides in spectrum - all will be taken
+            ArrayList<Oligonucleotide> Olig_To_Take_V2 = new ArrayList<>(olig_Set); // list of Oligonucleotides in spectrum to be used as connection to unfit ones
+            ArrayList<Oligonucleotide> Olist = new ArrayList<>();
+            Collections.shuffle(Olig_To_Take);
+            Olist.add(0, first);
+            while(Olig_To_Take.size()>0) {
+                for (int j = 0; j < Olig_To_Take.size(); j++) {
+                    if (Chain.fitValLoop(Olist.get(Olist.size()-1).getNucleotides(), Olig_To_Take.get(j).getNucleotides()) > 0) {
+                        Olist.add(Olig_To_Take.remove(j));
+                        j = -1;
+                    }
+                }
+
+                if( Olig_To_Take.size() != 0){
+                    Olist.add(Olig_To_Take.remove(0));// --------- remove if crossofver fixed -----------
+//                    for( int l = 0; l<Olig_To_Take_V2.size();l++){ // ---------- uncomment if crossofver fixed --------------
+//                        int m1 = Chain.fitValLoop(Olist.get(Olist.size()-1).getNucleotides(),Olig_To_Take_V2.get(l).getNucleotides());
+//                        int m2 = Chain.fitValLoop(Olig_To_Take_V2.get(l).getNucleotides(), Olig_To_Take_V2.get(0).getNucleotides());
+//                        if (m1 > 0 && m2 > 2){
+//                            Olist.add(new Oligonucleotide(Olig_To_Take_V2.get(l).getNucleotides()));
+//                            Olist.add(Olig_To_Take.remove(0));
+//                            break;
+//                        }
+//
+//                    }
+                }
+
+
+            }
             Chain.setOligonucleotides(Olist);
-//            for(int x = 0; x  < 5;x++)
-//                System.out.println(Chain.getOligonucleotides().get(x).getNucleotides());
             population.add(Chain);
         }
         return population;
