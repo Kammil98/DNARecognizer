@@ -70,6 +70,7 @@ public class Selector {
             //choosing indexes of members of population to contest
             for(int i = 0; i < contestGroupSize ; i++) {
                 indexes.add(population.remove(DNARecognizer.getGENERATOR().nextInt(currPopSize)));
+//                System.out.println("Member: "+indexes.get(indexes.size()-1).getFitVal());
                 currPopSize--;
             }
 
@@ -80,6 +81,8 @@ public class Selector {
                     winner = indexes.get(i);
                 }
             }
+
+//            System.out.println("Winner: "+winner.getFitVal());
             newPopulation.add(winner);
             indexes.clear();
         }

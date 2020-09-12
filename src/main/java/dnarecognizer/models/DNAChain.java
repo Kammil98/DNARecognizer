@@ -1,5 +1,7 @@
 package dnarecognizer.models;
 
+import dnarecognizer.DNARecognizer;
+
 import java.util.ArrayList;
 
 public class DNAChain implements Comparable<DNAChain>{
@@ -84,7 +86,7 @@ public class DNAChain implements Comparable<DNAChain>{
         StringBuilder s = new StringBuilder();
         for (int i = 0; i<this.getOligonucleotides().size()-1;i++){
             f = fitValLoop(this.getOligonucleotides().get(i).getNucleotides(),this.getOligonucleotides().get(i+1).getNucleotides());
-            s.append(this.getOligonucleotides().get(i).getNucleotides().substring(0,8-f));
+            s.append(this.getOligonucleotides().get(i).getNucleotides().substring(0, DNARecognizer.getOligonucleotideSize() -f));
         }
         s.append(this.getOligonucleotides().get(this.getOligonucleotides().size()-1).getNucleotides());
         return s;

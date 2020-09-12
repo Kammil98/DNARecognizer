@@ -23,17 +23,19 @@ public class DNARecognizer {
         return GENERATOR;
     }
     public static double getPercentOfLostOligonucleotides() {return PERCENT_OF_LOST_OLIGONUCLEOTIDES;}
+    public static int getOligonucleotideSize(){return OLIGONUCLEOTIDE_SIZE;}
 
     //in range 300-1000 nucleotides
     private static final int DNA_SIZE = 300;
     // in range 8-10 nucleotides
-    private static final int OLIGONUCLEOTIDE_SIZE = 8;
+    private static final int OLIGONUCLEOTIDE_SIZE =8;
     private static final int POPULATION_SIZE = 100;
-    private static final int EXPANDED_POPULATION_SIZE = 400;
-    private static final int NUMBER_OF_GENERATIONS = 2000;
-    private static final int CHILDREN_NO_PER_ONE_MATCH = 4;
+    //private static final int EXPANDED_POPULATION_SIZE = 400;
+    //private static final int NUMBER_OF_GENERATIONS = 2000;
+    private static final int CHILDREN_NO_PER_ONE_MATCH = 8;
+    private static final float TIME_IN_MS = 40000;
     private static final double PERCENT_OF_LOST_OLIGONUCLEOTIDES = 4;
-    private static final double COPIED_PERCENT_OF_DNA = 10.0d;
+    private static final double COPIED_PERCENT_OF_DNA = 8.0d;
     private static final Random GENERATOR = new Random();
     private static final Selector SELECTOR = new Selector(POPULATION_SIZE);
     private static final DNAChainGenerator DNA_CHAIN_GENERATOR = new DNAChainGenerator();
@@ -43,34 +45,59 @@ public class DNARecognizer {
      * then adding results to our population
      * @param population all possible results of our metaheuristic
      */
-    public static ArrayList<DNAChain> crossover(ArrayList<DNAChain> population) {
-        int breedNo = EXPANDED_POPULATION_SIZE - population.size();
-        int groupSize = POPULATION_SIZE / 20;
-        DNAChain member1, member2;
-        while(breedNo > 0){
-            ArrayList<DNAChain> group = new ArrayList<>();
+//    public static ArrayList<DNAChain> crossover(ArrayList<DNAChain> population) {
+//        int breedNo = EXPANDED_POPULATION_SIZE - population.size();
+//        int groupSize = POPULATION_SIZE / 20;
+//        DNAChain member1, member2;
+//        while(breedNo > 0){
+//            ArrayList<DNAChain> group = new ArrayList<>();
+//
+//            //select members to breed
+//            for(int i = 0; i < groupSize; i++)
+//                group.add(population.get(
+//                        GENERATOR.nextInt(population.size())));
+//            member1 = SELECTOR.bestOfGroup(group);
+//            group.remove(member1);
+//            member2 = SELECTOR.bestOfGroup(group);
+//
+//            //breed
+//            for(int i = 0; i < CHILDREN_NO_PER_ONE_MATCH / 2; i++){
+//                population.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
+//                population.add(crossTwoMembers(member2, member1, COPIED_PERCENT_OF_DNA));
+//            }
+//            //add one more child, if there was odd amount of children expected
+//            if(CHILDREN_NO_PER_ONE_MATCH % 2 == 1)
+//                population.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
+//
+//            breedNo -= CHILDREN_NO_PER_ONE_MATCH;
+//        }
+//        for(DNAChain D: population){
+//            D.countFitVal();
+//        }
+//        return population;
+//    }
 
+    public static ArrayList<DNAChain> crossover(ArrayList<DNAChain> population) {
+        DNAChain member1, member2;
+        ArrayList<DNAChain> group = new ArrayList<>();
+        while(population.size() > 0){
             //select members to breed
-            for(int i = 0; i < groupSize; i++)
-                group.add(population.get(
-                        GENERATOR.nextInt(population.size())));
-            member1 = SELECTOR.bestOfGroup(group);
-            group.remove(member1);
-            member2 = SELECTOR.bestOfGroup(group);
+            member1 = population.remove(GENERATOR.nextInt(population.size()));
+            member2 = population.remove(GENERATOR.nextInt(population.size()));
 
             //breed
             for(int i = 0; i < CHILDREN_NO_PER_ONE_MATCH / 2; i++){
-                population.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
-                population.add(crossTwoMembers(member2, member1, COPIED_PERCENT_OF_DNA));
+                group.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
+                group.add(crossTwoMembers(member2, member1, COPIED_PERCENT_OF_DNA));
             }
             //add one more child, if there was odd amount of children expected
             if(CHILDREN_NO_PER_ONE_MATCH % 2 == 1)
-                population.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
+                group.add(crossTwoMembers(member1, member2, COPIED_PERCENT_OF_DNA));
 
-            breedNo -= CHILDREN_NO_PER_ONE_MATCH;
         }
-        for(DNAChain D: population){
+        for(DNAChain D: group){
             D.countFitVal();
+            population.add(D);
         }
         return population;
     }
@@ -83,10 +110,50 @@ public class DNARecognizer {
      *                          Given in percent
      * @return mix of Oligonucleotides order from mother and father
      */
+//    public static DNAChain crossTwoMembers(DNAChain mother, DNAChain father, double copiedPartPercent) {
+//        DNAChain child = new DNAChain();
+//        ArrayList<Oligonucleotide> oligs = new ArrayList<>();
+//        List<Oligonucleotide> fatherPart2, motherPart1, motherPart2, motherPart3;
+//        int copiedPartAmount =
+//                (int) Math.ceil(copiedPartPercent *
+//                        (father.getOligonucleotides().size() / 100.0d));
+//        int fatherPartBegin, fatherPartEnd;
+//
+//        //ensure, that ArrayList is big enough to contain all oligs (+ 5 to be certain )
+//        oligs.ensureCapacity(mother.getOligonucleotides().size() + 5);
+//        do{
+//        fatherPartBegin = GENERATOR.nextInt(father.getOligonucleotides().size() - copiedPartAmount - 1) + 1;}
+//        while(fatherPartBegin>=mother.getOligonucleotides().size());
+//        fatherPartEnd = fatherPartBegin + copiedPartAmount;
+//        if(fatherPartEnd > mother.getOligonucleotides().size() - 1){
+//            fatherPartEnd = mother.getOligonucleotides().size();
+//        }
+//        motherPart1 = new ArrayList<>(mother.getOligonucleotides().subList(0, fatherPartBegin));
+//        motherPart2 = new ArrayList<>(mother.getOligonucleotides().subList(fatherPartBegin, fatherPartEnd));
+//        motherPart3 = new ArrayList<>(mother.getOligonucleotides().subList(fatherPartEnd, mother.getOligonucleotides().size()));
+//        fatherPart2 = new ArrayList<>(father.getOligonucleotides().subList(fatherPartBegin, fatherPartEnd));
+//
+//        //remove from father part all oligs, which already appeared in mothers part 1 or 3
+//        fatherPart2.removeAll(motherPart1);
+//        fatherPart2.removeAll(motherPart3);
+//
+//        //left only this oligs, which didn't appeared in fathers second part
+//        motherPart2.removeAll(fatherPart2);
+//
+//        //shallow copy - the same oligs in Parents and child (but another ArrayLists of oligs
+//        oligs.addAll(motherPart1);
+//        oligs.addAll(motherPart2);
+//        oligs.addAll(fatherPart2);
+//        oligs.addAll(motherPart3);
+//
+//        child.setOligonucleotides(oligs);
+//        return child;
+//    }
+
     public static DNAChain crossTwoMembers(DNAChain mother, DNAChain father, double copiedPartPercent) {
         DNAChain child = new DNAChain();
         ArrayList<Oligonucleotide> oligs = new ArrayList<>();
-        List<Oligonucleotide> fatherPart2, motherPart1, motherPart2, motherPart3;
+        List<Oligonucleotide> motherPart1, motherPart2, motherPart3;
         int copiedPartAmount =
                 (int) Math.ceil(copiedPartPercent *
                         (father.getOligonucleotides().size() / 100.0d));
@@ -94,8 +161,9 @@ public class DNARecognizer {
 
         //ensure, that ArrayList is big enough to contain all oligs (+ 5 to be certain )
         oligs.ensureCapacity(mother.getOligonucleotides().size() + 5);
-
-        fatherPartBegin = GENERATOR.nextInt(father.getOligonucleotides().size() - copiedPartAmount - 1) + 1;
+        do{
+            fatherPartBegin = GENERATOR.nextInt(father.getOligonucleotides().size() - copiedPartAmount - 1) + 1;}
+        while(fatherPartBegin>=mother.getOligonucleotides().size());
         fatherPartEnd = fatherPartBegin + copiedPartAmount;
         if(fatherPartEnd > mother.getOligonucleotides().size() - 1){
             fatherPartEnd = mother.getOligonucleotides().size();
@@ -103,25 +171,22 @@ public class DNARecognizer {
         motherPart1 = new ArrayList<>(mother.getOligonucleotides().subList(0, fatherPartBegin));
         motherPart2 = new ArrayList<>(mother.getOligonucleotides().subList(fatherPartBegin, fatherPartEnd));
         motherPart3 = new ArrayList<>(mother.getOligonucleotides().subList(fatherPartEnd, mother.getOligonucleotides().size()));
-        fatherPart2 = new ArrayList<>(father.getOligonucleotides().subList(fatherPartBegin, fatherPartEnd));
 
-        //remove from father part all oligs, which already appeared in mothers part 1 or 3
-        fatherPart2.removeAll(motherPart1);
-        fatherPart2.removeAll(motherPart3);
-
-        //left only this oligs, which didn't appeared in fathers second part
-        motherPart2.removeAll(fatherPart2);
-
-        //shallow copy - the same oligs in Parents and child (but another ArrayLists of oligs
         oligs.addAll(motherPart1);
-        oligs.addAll(motherPart2);
-        oligs.addAll(fatherPart2);
+        for(int i = 0; i <father.getOligonucleotides().size();i++){
+            if(motherPart2.contains(father.getOligonucleotides().get(i))){
+                oligs.add(father.getOligonucleotides().get(i));
+                motherPart2.remove(father.getOligonucleotides().get(i));
+            }
+        }
+        while(motherPart2.size()>0){
+            oligs.add(motherPart2.remove(0));
+        }
         oligs.addAll(motherPart3);
 
         child.setOligonucleotides(oligs);
         return child;
     }
-
     /**
      * @param population all possible results of our metaheuristic
      * @return number of best possible results in population
@@ -172,33 +237,33 @@ public class DNARecognizer {
      * @param member DNAChain, which should be shuffled
      * @param shufflingDegree how many oligs should be shuffled. Given in percent
      */
-    public static void mutateMemberByShuffling(DNAChain member, double shufflingDegree) {
-        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
-        int shufflingAmount =
-                (int) Math.ceil(shufflingDegree *
-                        (oliginucleotides.size() / 100.0d));
-        int shufflingBegin = GENERATOR.nextInt(
-                oliginucleotides.size() - shufflingAmount -1 ) + 1;
-        List<Oligonucleotide> oligToShuffle = oliginucleotides
-                .subList(shufflingBegin, shufflingBegin + shufflingAmount);
-        Collections.shuffle(oligToShuffle);
-    }
+//    public static void mutateMemberByShuffling(DNAChain member, double shufflingDegree) {
+//        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
+//        int shufflingAmount =
+//                (int) Math.ceil(shufflingDegree *
+//                        (oliginucleotides.size() / 100.0d));
+//        int shufflingBegin = GENERATOR.nextInt(
+//                oliginucleotides.size() - shufflingAmount -1 ) + 1;
+//        List<Oligonucleotide> oligToShuffle = oliginucleotides
+//                .subList(shufflingBegin, shufflingBegin + shufflingAmount);
+//        Collections.shuffle(oligToShuffle);
+//    }
 
     /**
      * switches places of random oligs in DNAChain
      * @param member DNAChain, which should have its oligs switched
      * @param shufflingAmount how many oligs to switch places
      */
-    public static void mutateMemberBySwitching(DNAChain member, double shufflingAmount) {
+    public static void mutateMemberBySwitching(DNAChain member, int shufflingAmount) {
         ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
         for(int i = 0;i<shufflingAmount;i++){
-            int switch1 = GENERATOR.nextInt(oliginucleotides.size() -1 ) + 1;
-            int switch2;
+            int switch1,switch2;
             do {
+                switch1 = GENERATOR.nextInt(oliginucleotides.size() - 1 ) + 1;
                 switch2 = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
-            }while  (member.fitValLoop(oliginucleotides.get(switch1).getNucleotides(), oliginucleotides.get(switch1 - 1).getNucleotides())==0&&
-                    member.fitValLoop(oliginucleotides.get(switch2).getNucleotides(), oliginucleotides.get(switch2 - 1).getNucleotides())==0
-                    );
+            }while  ((member.fitValLoop(oliginucleotides.get(switch1).getNucleotides(), oliginucleotides.get(switch1 - 1).getNucleotides())==0||
+                    member.fitValLoop(oliginucleotides.get(switch2).getNucleotides(), oliginucleotides.get(switch2 - 1).getNucleotides())==0)&&
+                    switch1==switch2);
             Collections.swap(oliginucleotides,switch1,switch2);
         }
     }
@@ -263,7 +328,7 @@ public class DNARecognizer {
         if(progress < 5){
             SELECTOR.roulette(population);
         }
-        else if(progress <= 100){
+        else if(progress < 100){
             SELECTOR.contest(population);
         }
         else{
@@ -283,9 +348,9 @@ public class DNARecognizer {
         ArrayList<DNAChain> population;
         StringBuilder DNA = new StringBuilder();
         population = DNA_CHAIN_GENERATOR.Create(DNA_SIZE,OLIGONUCLEOTIDE_SIZE,POPULATION_SIZE,DNA,"src/main/resources/SampleDNA.txt");
-
-        for (int i=0;i<NUMBER_OF_GENERATIONS;i++){
-            System.out.println("NR: "+i);
+        int j = 0;
+        while((System.currentTimeMillis()-startTime)<TIME_IN_MS){
+        //for (int j=0;j<NUMBER_OF_GENERATIONS;j++){
             for (DNAChain dnaChain : population) {
                 if (dnaChain.getFitVal() > bestchain.getFitVal()) {
                     bestchain = dnaChain;
@@ -304,12 +369,12 @@ public class DNARecognizer {
 
             if(optnr>=30){
                 for (DNAChain dnaChain : population) {
-                    if(population.size()<DNA_SIZE*0.01)
+                    if(dnaChain.getOligonucleotides().size()<DNA_SIZE*1.01)
                     mutateMemberByAdding(dnaChain,1);
                     else
                     mutateMemberBySwitching(dnaChain, 5);
                 }
-//                System.out.println("Shuffle Filip's");
+                System.out.println("Shuffle Filip's");
                 for(DNAChain D: population){
                     D.countFitVal();
                 }
@@ -318,16 +383,26 @@ public class DNARecognizer {
                 bestchain = new DNAChain();
             }
             crossover(population);
-            select(population,i/NUMBER_OF_GENERATIONS*100);
-            mutateIfLocalOptimum(population,3);
-
+            for (DNAChain dnaChain : population) {
+                if (GENERATOR.nextInt(100) < 10) {
+                    mutateMemberBySwitching(dnaChain, 1);
+                }
+            }
             for(DNAChain D: population){
                 D.countFitVal();
             }
+            select(population,(System.currentTimeMillis()-startTime)/TIME_IN_MS*100);
+            population.remove(GENERATOR.nextInt(population.size()));
+            DNAChain OG = new DNAChain();
+            OG.setOligonucleotides(supreme.getOligonucleotides());
+            OG.countFitVal();
+            population.add(OG);
 
+
+        j++;
         }
         for(int i = 0; i<supreme.getOligonucleotides().size();i++){
-            System.out.println(supreme.getOligonucleotides().get(i).getNucleotides());
+            System.out.println("Olig #"+i+": "+supreme.getOligonucleotides().get(i).getNucleotides());
         }
         System.out.println("Best fitValue " + supreme.getFitVal());
         System.out.println("How many Oligs: " + supreme.getOligonucleotides().size());
