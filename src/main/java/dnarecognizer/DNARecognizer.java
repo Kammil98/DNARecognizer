@@ -22,6 +22,7 @@ public class DNARecognizer {
     public static Random getGENERATOR() {
         return GENERATOR;
     }
+    public static double getPercentOfLostOligonucleotides() {return PERCENT_OF_LOST_OLIGONUCLEOTIDES;}
 
     //in range 300-1000 nucleotides
     private static final int DNA_SIZE = 300;
@@ -29,8 +30,10 @@ public class DNARecognizer {
     private static final int OLIGONUCLEOTIDE_SIZE = 8;
     private static final int POPULATION_SIZE = 100;
     private static final int EXPANDED_POPULATION_SIZE = 400;
+    private static final int NUMBER_OF_GENERATIONS = 2000;
     private static final int CHILDREN_NO_PER_ONE_MATCH = 4;
-    private static final double COPIED_PERCENT_OF_DNA = 40.0d;
+    private static final double PERCENT_OF_LOST_OLIGONUCLEOTIDES = 4;
+    private static final double COPIED_PERCENT_OF_DNA = 10.0d;
     private static final Random GENERATOR = new Random();
     private static final Selector SELECTOR = new Selector(POPULATION_SIZE);
     private static final DNAChainGenerator DNA_CHAIN_GENERATOR = new DNAChainGenerator();
@@ -94,6 +97,9 @@ public class DNARecognizer {
 
         fatherPartBegin = GENERATOR.nextInt(father.getOligonucleotides().size() - copiedPartAmount - 1) + 1;
         fatherPartEnd = fatherPartBegin + copiedPartAmount;
+        if(fatherPartEnd > mother.getOligonucleotides().size() - 1){
+            fatherPartEnd = mother.getOligonucleotides().size();
+        }
         motherPart1 = new ArrayList<>(mother.getOligonucleotides().subList(0, fatherPartBegin));
         motherPart2 = new ArrayList<>(mother.getOligonucleotides().subList(fatherPartBegin, fatherPartEnd));
         motherPart3 = new ArrayList<>(mother.getOligonucleotides().subList(fatherPartEnd, mother.getOligonucleotides().size()));
@@ -144,20 +150,21 @@ public class DNARecognizer {
                                             double shufflingDegree){
         int optimumNo = checkLocalOptima(population);
         //don't need to
-        if (optimumNo < POPULATION_SIZE/30)
+        if (optimumNo < POPULATION_SIZE/20)
             return;
         Iterator<DNAChain> iter = population.iterator();
         for(DNAChain member = iter.next();
             iter.hasNext() && optimumNo > 3;
             member = iter.next()){
-            if(optimumNo > POPULATION_SIZE / 5)
-                shufflingDegree = Math.min(5.0d, shufflingDegree + 2.0d); // changed from max to min cause if 100.0d then its always 100% of oligonucleotides mutated
-            else                                                            // changed numbers from 100.0d and 70.0d to 5.0d and 2.0d
-                shufflingDegree = Math.min(3.0d, shufflingDegree + 0.0d);  // changed numbers from 100.0d and 30.0d to 3.0d and 0.0d
-            mutateMemberByShuffling(member, shufflingDegree);
+//            if(optimumNo > POPULATION_SIZE / 5)
+//                shufflingDegree = Math.min(5.0d, shufflingDegree + 2.0d); // changed from max to min cause if 100.0d then its always 100% of oligonucleotides mutated
+//            else                                                            // changed numbers from 100.0d and 70.0d to 5.0d and 2.0d
+//                shufflingDegree = Math.min(3.0d, shufflingDegree + 0.0d);  // changed numbers from 100.0d and 30.0d to 3.0d and 0.0d
+            //mutateMemberByShuffling(member, shufflingDegree);
+            mutateMemberBySwitching(member,1);
             optimumNo--;
         }
-        System.out.println("Shuffle Kamil's");
+//        System.out.println("Shuffle Kamil's");
     }
 
     /**
@@ -175,6 +182,25 @@ public class DNARecognizer {
         List<Oligonucleotide> oligToShuffle = oliginucleotides
                 .subList(shufflingBegin, shufflingBegin + shufflingAmount);
         Collections.shuffle(oligToShuffle);
+    }
+
+    /**
+     * switches places of random oligs in DNAChain
+     * @param member DNAChain, which should have its oligs switched
+     * @param shufflingAmount how many oligs to switch places
+     */
+    public static void mutateMemberBySwitching(DNAChain member, double shufflingAmount) {
+        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
+        for(int i = 0;i<shufflingAmount;i++){
+            int switch1 = GENERATOR.nextInt(oliginucleotides.size() -1 ) + 1;
+            int switch2;
+            do {
+                switch2 = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
+            }while  (member.fitValLoop(oliginucleotides.get(switch1).getNucleotides(), oliginucleotides.get(switch1 - 1).getNucleotides())==0&&
+                    member.fitValLoop(oliginucleotides.get(switch2).getNucleotides(), oliginucleotides.get(switch2 - 1).getNucleotides())==0
+                    );
+            Collections.swap(oliginucleotides,switch1,switch2);
+        }
     }
 
     /**
@@ -234,10 +260,10 @@ public class DNARecognizer {
      * @param progress elapsed time given in percent
      */
     public static void select(ArrayList<DNAChain> population, float progress){
-        if(progress < 50){
+        if(progress < 5){
             SELECTOR.roulette(population);
         }
-        else if(progress < 90){
+        else if(progress <= 100){
             SELECTOR.contest(population);
         }
         else{
@@ -251,12 +277,15 @@ public class DNARecognizer {
      */
     public static void main(String[] args) {
         long startTime = System.currentTimeMillis();
-        ArrayList<DNAChain> population;
-        population = DNA_CHAIN_GENERATOR.Create(DNA_SIZE,OLIGONUCLEOTIDE_SIZE,POPULATION_SIZE,"src/main/resources/SampleDNA.txt");
         int optnr = 0, optval = 0; // optnr - number of occurrences of the same best fitval, optval - fitval of the best chain in previous loop occurrence
         DNAChain bestchain = new DNAChain(); // best chain in generation
         DNAChain supreme = new DNAChain(); // best chain in all generations
-        for (int i=0;i<600;i++){
+        ArrayList<DNAChain> population;
+        StringBuilder DNA = new StringBuilder();
+        population = DNA_CHAIN_GENERATOR.Create(DNA_SIZE,OLIGONUCLEOTIDE_SIZE,POPULATION_SIZE,DNA,"src/main/resources/SampleDNA.txt");
+
+        for (int i=0;i<NUMBER_OF_GENERATIONS;i++){
+            System.out.println("NR: "+i);
             for (DNAChain dnaChain : population) {
                 if (dnaChain.getFitVal() > bestchain.getFitVal()) {
                     bestchain = dnaChain;
@@ -266,17 +295,21 @@ public class DNARecognizer {
             if(bestchain.getFitVal()>supreme.getFitVal()){
                 System.out.println("New supreme: " + bestchain.getFitVal());
                 supreme.setOligonucleotides(bestchain.getOligonucleotides());
+                optnr=0;
             }
             if(bestchain.getFitVal() == optval)
                 optnr++;
             else if(bestchain.getFitVal() > optval)
                 optval = bestchain.getFitVal();
 
-            if(optnr>=20){
+            if(optnr>=30){
                 for (DNAChain dnaChain : population) {
-                    mutateMemberByShuffling(dnaChain, 3);
+                    if(population.size()<DNA_SIZE*0.01)
+                    mutateMemberByAdding(dnaChain,1);
+                    else
+                    mutateMemberBySwitching(dnaChain, 5);
                 }
-                System.out.println("Shuffle Filip's");
+//                System.out.println("Shuffle Filip's");
                 for(DNAChain D: population){
                     D.countFitVal();
                 }
@@ -285,27 +318,26 @@ public class DNARecognizer {
                 bestchain = new DNAChain();
             }
             crossover(population);
-            select(population,i/5);
-            mutateIfLocalOptimum(population,1);
+            select(population,i/NUMBER_OF_GENERATIONS*100);
+            mutateIfLocalOptimum(population,3);
+
             for(DNAChain D: population){
                 D.countFitVal();
             }
 
         }
-        for (int i = 0; i<population.size();i++){
-            System.out.println("Value of "+ i+ ": " +population.get(i).getFitVal());
-
-        }
         for(int i = 0; i<supreme.getOligonucleotides().size();i++){
             System.out.println(supreme.getOligonucleotides().get(i).getNucleotides());
         }
-        System.out.println("Best so far: " + supreme.getFitVal());
-        System.out.println("Oligo spectrum size: " + supreme.getOligonucleotides().size());
-        System.out.println("DNA lenght: " + supreme.toStringBuilder().length());
-        System.out.println("DNA: " + supreme.toStringBuilder());
+        System.out.println("Best fitValue " + supreme.getFitVal());
+        System.out.println("How many Oligs: " + supreme.getOligonucleotides().size());
+        System.out.println("Build DNA lenght: " + supreme.toStringBuilder().length());
+        System.out.println("Build DNA: " + supreme.toStringBuilder());
+        System.out.println("Orig. DNA: " + DNA);
         System.out.println("Time taken: "+(System.currentTimeMillis()-startTime)+"ms");
-    }
+        System.out.println("LevenshteinDistance: " + LevenshteinDistance.Compute(supreme.toString(),DNA.toString()));
 
+    }
 
 
 }

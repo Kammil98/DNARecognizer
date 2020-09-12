@@ -91,8 +91,8 @@ public class Selector {
      * DNA Chains
      * @param population group of DNAChains, which will take part in selection
      */
-    public void ranking(ArrayList<DNAChain> population){
-        Collections.sort(population,Collections.reverseOrder());
+    public void ranking(ArrayList<DNAChain> population){ //probably not working | sort what? size/fitValue?
+        population.sort(Collections.reverseOrder());
         population.subList(0, DEMAND_SIZE);
     }
 }

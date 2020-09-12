@@ -33,30 +33,60 @@ public class DNAChainGenerator {
      * @param DNA_Size number of nucleotides in DNA chain
      * @param OLIGONUCLEOTIDE_SIZE number of nucleotides in oligonucleotide
      * @param POPULATION_SIZE number of DNA chain instances
-     * @param file path and name of the file that contains Original DNA chain
+     * @param file path and name of the file that contains Original DNA chain - if you want to read from file
      * @return array of DNAChains
      */
-    public ArrayList<DNAChain> Create (int DNA_Size, int OLIGONUCLEOTIDE_SIZE, int POPULATION_SIZE, String file){
-        StringBuilder DNA = new StringBuilder();
-        try {
-            DNA = readFile(file);
-            System.out.println(DNA);
-
-        } catch (IOException e) {
-            e.printStackTrace();
+    public ArrayList<DNAChain> Create (int DNA_Size, int OLIGONUCLEOTIDE_SIZE, int POPULATION_SIZE,StringBuilder DNA, String file){
+//        try {                         // uncomment if you want to read a file
+////            DNA = readFile(file);
+////            System.out.println(DNA);
+////
+////        } catch (IOException e) {
+////            e.printStackTrace();
+////        }
+        for(int i = 0; i<DNA_Size;i++){ // comment if you want to read a file
+            switch(DNARecognizer.getGENERATOR().nextInt(4)){
+                case 0:
+                    DNA.append('A');
+                    break;
+                case 1:
+                    DNA.append('C');
+                    break;
+                case 2:
+                    DNA.append('G');
+                    break;
+                default:
+                    DNA.append('T');
+                    break;
+            }
         }
+
         Set<String> hash_Set = new HashSet<>();
         for (int i = 0; i < DNA.length()-OLIGONUCLEOTIDE_SIZE+1; i++){
             hash_Set.add(DNA.substring(i,i+OLIGONUCLEOTIDE_SIZE));
         }
         hash_Set.remove(new StringBuilder(DNA.substring(0,OLIGONUCLEOTIDE_SIZE)));
 
+        int k = 0;
+        Iterator<String> itr = hash_Set.iterator();
+        while (itr.hasNext()) {
+            itr.next();
+            if ((hash_Set.size()-k)>DNA_Size*(100-DNARecognizer.getPercentOfLostOligonucleotides())/100) {
+                k++;
+                itr.remove();
+            }
+            else{
+                break;
+            }
+        }
         Set<Oligonucleotide> olig_Set = new HashSet<>();
         Oligonucleotide first = new Oligonucleotide(new StringBuilder(DNA.substring(0,OLIGONUCLEOTIDE_SIZE)));
         for(String o : hash_Set){
             Oligonucleotide oligo = new Oligonucleotide(new StringBuilder(o));
             olig_Set.add(oligo);
         }
+
+
         ArrayList<DNAChain> population = new ArrayList<>(POPULATION_SIZE);
         for(int i = 0; i < POPULATION_SIZE;i++) {
             DNAChain Chain = new DNAChain();
@@ -74,17 +104,16 @@ public class DNAChainGenerator {
                 }
 
                 if( Olig_To_Take.size() != 0){
-                    Olist.add(Olig_To_Take.remove(0));// --------- remove if crossofver fixed -----------
-//                    for( int l = 0; l<Olig_To_Take_V2.size();l++){ // ---------- uncomment if crossofver fixed --------------
-//                        int m1 = Chain.fitValLoop(Olist.get(Olist.size()-1).getNucleotides(),Olig_To_Take_V2.get(l).getNucleotides());
-//                        int m2 = Chain.fitValLoop(Olig_To_Take_V2.get(l).getNucleotides(), Olig_To_Take_V2.get(0).getNucleotides());
-//                        if (m1 > 0 && m2 > 2){
-//                            Olist.add(new Oligonucleotide(Olig_To_Take_V2.get(l).getNucleotides()));
-//                            Olist.add(Olig_To_Take.remove(0));
-//                            break;
-//                        }
-//
-//                    }
+                    for( int l = 0; l<Olig_To_Take_V2.size();l++){
+                        int m1 = Chain.fitValLoop(Olist.get(Olist.size()-1).getNucleotides(),Olig_To_Take_V2.get(l).getNucleotides());
+                        int m2 = Chain.fitValLoop(Olig_To_Take_V2.get(l).getNucleotides(), Olig_To_Take_V2.get(0).getNucleotides());
+                        if (m1 > 0 && m2 > 2){
+                            Olist.add(new Oligonucleotide(Olig_To_Take_V2.get(l).getNucleotides()));
+                            Olist.add(Olig_To_Take.remove(0));
+                            break;
+                        }
+
+                    }
                 }
 
 
