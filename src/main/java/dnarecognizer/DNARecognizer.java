@@ -33,7 +33,7 @@ public class DNARecognizer {
     //private static final int EXPANDED_POPULATION_SIZE = 400;
     //private static final int NUMBER_OF_GENERATIONS = 2000;
     private static final int CHILDREN_NO_PER_ONE_MATCH = 8;
-    private static final float TIME_IN_MS = 40000;
+    private static final float TIME_IN_MS = 60000;
     private static final double PERCENT_OF_LOST_OLIGONUCLEOTIDES = 4;
     private static final double COPIED_PERCENT_OF_DNA = 8.0d;
     private static final Random GENERATOR = new Random();
@@ -237,17 +237,17 @@ public class DNARecognizer {
      * @param member DNAChain, which should be shuffled
      * @param shufflingDegree how many oligs should be shuffled. Given in percent
      */
-//    public static void mutateMemberByShuffling(DNAChain member, double shufflingDegree) {
-//        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
-//        int shufflingAmount =
-//                (int) Math.ceil(shufflingDegree *
-//                        (oliginucleotides.size() / 100.0d));
-//        int shufflingBegin = GENERATOR.nextInt(
-//                oliginucleotides.size() - shufflingAmount -1 ) + 1;
-//        List<Oligonucleotide> oligToShuffle = oliginucleotides
-//                .subList(shufflingBegin, shufflingBegin + shufflingAmount);
-//        Collections.shuffle(oligToShuffle);
-//    }
+    public static void mutateMemberByShuffling(DNAChain member, double shufflingDegree) {
+        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
+        int shufflingAmount =
+                (int) Math.ceil(shufflingDegree *
+                        (oliginucleotides.size() / 100.0d));
+        int shufflingBegin = GENERATOR.nextInt(
+                oliginucleotides.size() - shufflingAmount -1 ) + 1;
+        List<Oligonucleotide> oligToShuffle = oliginucleotides
+                .subList(shufflingBegin, shufflingBegin + shufflingAmount);
+        Collections.shuffle(oligToShuffle);
+    }
 
     /**
      * switches places of random oligs in DNAChain
@@ -256,17 +256,128 @@ public class DNARecognizer {
      */
     public static void mutateMemberBySwitching(DNAChain member, int shufflingAmount) {
         ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
-        for(int i = 0;i<shufflingAmount;i++){
-            int switch1,switch2;
-            do {
-                switch1 = GENERATOR.nextInt(oliginucleotides.size() - 1 ) + 1;
-                switch2 = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
-            }while  ((member.fitValLoop(oliginucleotides.get(switch1).getNucleotides(), oliginucleotides.get(switch1 - 1).getNucleotides())==0||
-                    member.fitValLoop(oliginucleotides.get(switch2).getNucleotides(), oliginucleotides.get(switch2 - 1).getNucleotides())==0)&&
-                    switch1==switch2);
-            Collections.swap(oliginucleotides,switch1,switch2);
+        for(int i = 0;i<shufflingAmount;i++) {
+            int[] switcho = new int[2];
+            for(int s = 0; s<switcho.length;s++) {
+                do {
+                    do {
+                        switcho[s] = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
+                    } while (member.fitValLoop(oliginucleotides.get(switcho[s] - 1).getNucleotides(), oliginucleotides.get(switcho[s]).getNucleotides()) == OLIGONUCLEOTIDE_SIZE - 1);
+                    if (switcho[s] + 1 == member.getOligonucleotides().size()) {
+                        break;
+                    }
+                } while (member.fitValLoop(oliginucleotides.get(switcho[s]).getNucleotides(), oliginucleotides.get(switcho[s] + 1).getNucleotides()) == OLIGONUCLEOTIDE_SIZE - 1||switcho[0]==switcho[1]);
+            }
+            Collections.swap(oliginucleotides,switcho[0],switcho[1]);
         }
     }
+
+    public static void mutateMemberByChangingPosition(DNAChain member) {
+        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
+        int changed, place;
+        do {
+            do {
+                changed = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
+            } while (member.fitValLoop(oliginucleotides.get(changed - 1).getNucleotides(), oliginucleotides.get(changed).getNucleotides()) == OLIGONUCLEOTIDE_SIZE - 1);
+            if (changed + 1 == member.getOligonucleotides().size()) {
+                break;
+            }
+        } while (member.fitValLoop(oliginucleotides.get(changed).getNucleotides(), oliginucleotides.get(changed + 1).getNucleotides()) == OLIGONUCLEOTIDE_SIZE - 1);
+        do{
+            place = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
+        }  while(member.fitValLoop(oliginucleotides.get(place - 1).getNucleotides(), oliginucleotides.get(place).getNucleotides())== OLIGONUCLEOTIDE_SIZE - 1);
+        if(changed>place){
+
+            oliginucleotides.add(place,oliginucleotides.remove(changed));
+        }else{
+//            System.out.println(oliginucleotides.get(changed).getNucleotides());
+//            System.out.println(oliginucleotides.get(place - 1).getNucleotides());
+//            System.out.println(oliginucleotides.get(place).getNucleotides());
+//            System.out.println(oliginucleotides.get(place + 1).getNucleotides());
+//            System.out.println(member.fitValLoop(oliginucleotides.get(place - 1).getNucleotides(), oliginucleotides.get(place).getNucleotides()));
+            oliginucleotides.add(place - 1,oliginucleotides.remove(changed));
+//            System.out.println("********");
+//            System.out.println(oliginucleotides.get(place - 2).getNucleotides());
+//            System.out.println(oliginucleotides.get(place - 1).getNucleotides());
+//            System.out.println(oliginucleotides.get(place).getNucleotides());
+//            System.out.println(oliginucleotides.get(place + 1).getNucleotides());
+//            System.out.println("------------------");
+        }
+    }
+
+    public static void mutateMemberByChangingSectionPosition(DNAChain member) {
+        ArrayList<Oligonucleotide> oliginucleotides = member.getOligonucleotides();
+        for(int i = 1;i<oliginucleotides.size()-1;i++){
+            if(member.fitValLoop(oliginucleotides.get(i).getNucleotides(), oliginucleotides.get(i+1).getNucleotides()) == OLIGONUCLEOTIDE_SIZE-1){
+                break;
+            }
+            else if (i+1==oliginucleotides.size()-1) {
+                return;
+            }
+        }
+        int change1, change2, position;
+//        System.out.println("Do-1");
+        do {
+            change1 = GENERATOR.nextInt(oliginucleotides.size() - 2) + 1;
+        }while (member.fitValLoop(oliginucleotides.get(change1 - 1).getNucleotides(), oliginucleotides.get(change1).getNucleotides()) != OLIGONUCLEOTIDE_SIZE-1 &&
+                member.fitValLoop(oliginucleotides.get(change1).getNucleotides(), oliginucleotides.get(change1 + 1).getNucleotides()) != OLIGONUCLEOTIDE_SIZE-1);
+
+        change2 = change1;
+
+//        System.out.println("While-1");
+        while(member.fitValLoop(oliginucleotides.get(change1-1).getNucleotides(),oliginucleotides.get(change1).getNucleotides())==OLIGONUCLEOTIDE_SIZE-1){
+            change1--;
+            if(change1<=1){
+                return;
+            }
+        }
+        if(change1 == 0){
+            System.out.println("------------------------------------------------------------------------------------------");
+        }
+
+//        System.out.println("While-1");
+        while (member.fitValLoop(oliginucleotides.get(change2).getNucleotides(),oliginucleotides.get(change2+1).getNucleotides())==OLIGONUCLEOTIDE_SIZE-1){
+            change2++;
+            if(change2>=oliginucleotides.size()-1){
+                break;
+            }
+        }
+
+//        System.out.println("Do-2");
+        do{
+            position = GENERATOR.nextInt(oliginucleotides.size() - 1) + 1;
+        }while(!(position < change1 || position > change2) ||member.fitValLoop(oliginucleotides.get(position-1).getNucleotides(),oliginucleotides.get(position).getNucleotides())==OLIGONUCLEOTIDE_SIZE-1);
+        if(position == 0){
+            System.out.println("p------------------------------------------------------------------------------------------");
+        }
+        ArrayList<Oligonucleotide> newchain = new ArrayList<>();
+//        System.out.println("Make");
+//        System.out.println("Switching: "+change1+" - "+change2+ " to position: "+position);
+        if(position<change1) {
+            newchain.addAll(oliginucleotides.subList(0, position));
+            newchain.addAll(oliginucleotides.subList(change1, change2+1));
+            newchain.addAll(oliginucleotides.subList(position, change1));
+            newchain.addAll(oliginucleotides.subList(change2+1, oliginucleotides.size()));
+        }else{
+            newchain.addAll(oliginucleotides.subList(0, change1));
+            newchain.addAll(oliginucleotides.subList(change2+1,position));
+            newchain.addAll(oliginucleotides.subList(change1,change2+1));
+            newchain.addAll(oliginucleotides.subList(position, oliginucleotides.size()));
+        }
+        member.setOligonucleotides(newchain);
+//        int k = 0;
+//        for(Oligonucleotide o : oliginucleotides){
+//            System.out.println(o.getNucleotides() + " -> "+o.getId() + " | Pozycja: "+k);
+//            k++;
+//        }
+//        k = 0;
+//        for(Oligonucleotide o : member.getOligonucleotides()){
+//            System.out.println(o.getNucleotides() + " -> "+o.getId() + " | Pozycja: "+k);
+//            k++;
+//        }
+//        System.out.println("FIN");
+    }
+
 
     /**
      * Add some oligs to result
@@ -372,7 +483,12 @@ public class DNARecognizer {
                     if(dnaChain.getOligonucleotides().size()<DNA_SIZE*1.01)
                     mutateMemberByAdding(dnaChain,1);
                     else
-                    mutateMemberBySwitching(dnaChain, 5);
+                    //mutateMemberBySwitching(dnaChain, 5);
+                    for(int l = 0;l<5;l++) {
+                        mutateMemberByChangingPosition(dnaChain);
+                        if(((System.currentTimeMillis()-startTime)/TIME_IN_MS*100)>50)
+                        mutateMemberByChangingSectionPosition(dnaChain);
+                    }
                 }
                 System.out.println("Shuffle Filip's");
                 for(DNAChain D: population){
@@ -385,7 +501,10 @@ public class DNARecognizer {
             crossover(population);
             for (DNAChain dnaChain : population) {
                 if (GENERATOR.nextInt(100) < 10) {
-                    mutateMemberBySwitching(dnaChain, 1);
+                    mutateMemberByChangingPosition(dnaChain);
+                    if(((System.currentTimeMillis()-startTime)/TIME_IN_MS*100)>50){
+                        mutateMemberByChangingSectionPosition(dnaChain);
+                    }
                 }
             }
             for(DNAChain D: population){
@@ -402,7 +521,11 @@ public class DNARecognizer {
         j++;
         }
         for(int i = 0; i<supreme.getOligonucleotides().size();i++){
-            System.out.println("Olig #"+i+": "+supreme.getOligonucleotides().get(i).getNucleotides());
+            if(i!=supreme.getOligonucleotides().size()-1){
+                System.out.println("Olig #"+i+": "+supreme.getOligonucleotides().get(i).getNucleotides()+" --> f: "+supreme.fitValLoop(supreme.getOligonucleotides().get(i).getNucleotides(),supreme.getOligonucleotides().get(i+1).getNucleotides()));
+            }else{
+                System.out.println("Olig #"+i+": "+supreme.getOligonucleotides().get(i).getNucleotides());
+            }
         }
         System.out.println("Best fitValue " + supreme.getFitVal());
         System.out.println("How many Oligs: " + supreme.getOligonucleotides().size());
