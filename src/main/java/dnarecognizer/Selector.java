@@ -28,31 +28,6 @@ public class Selector {
         return group.get(winner);
     }
 
-    /**
-     * cut population to demandSize size
-     * remove random elements with probability
-     * based on fitValue
-     * @param population group of DNAChains, which will take part in selection
-     */
-    public void roulette(ArrayList<DNAChain> population){
-        int sum = 0, selected, randomVal;
-
-        //stream calculate sum of all fitValues
-        sum = population.stream()
-                .map(DNAChain::getFitVal)
-                .reduce(sum, Integer::sum);
-
-        while(population.size() > DEMAND_SIZE){
-            randomVal = (int) (sum * DNARecognizer.getGENERATOR().nextDouble());
-            for(selected = 0; randomVal >= 0; selected++){
-                randomVal -= population.get(selected).getFitVal();
-            }
-            selected--; // one down to choose correct DNA chain
-            //removing element and update sum
-            sum -= population.get(selected).getFitVal();
-            population.remove(selected);
-        }
-    }
 
     /**
      * cut population to demandSize size
@@ -64,13 +39,12 @@ public class Selector {
         ArrayList<DNAChain> indexes = new ArrayList<>();
         ArrayList<DNAChain> newPopulation = new ArrayList<>();
         DNAChain winner;
-        int currPopSize, contestGroupSize = 4;
+        int currPopSize, contestGroupSize = DNARecognizer.getChildrenNoPerOneMatch()/2;
         currPopSize = population.size();
         while(newPopulation.size() < DEMAND_SIZE){
             //choosing indexes of members of population to contest
             for(int i = 0; i < contestGroupSize ; i++) {
                 indexes.add(population.remove(DNARecognizer.getGENERATOR().nextInt(currPopSize)));
-//                System.out.println("Member: "+indexes.get(indexes.size()-1).getFitVal());
                 currPopSize--;
             }
 
@@ -82,7 +56,6 @@ public class Selector {
                 }
             }
 
-//            System.out.println("Winner: "+winner.getFitVal());
             newPopulation.add(winner);
             indexes.clear();
         }
@@ -94,7 +67,7 @@ public class Selector {
      * DNA Chains
      * @param population group of DNAChains, which will take part in selection
      */
-    public void ranking(ArrayList<DNAChain> population){ //probably not working | sort what? size/fitValue?
+    public void ranking(ArrayList<DNAChain> population){
         population.sort(Collections.reverseOrder());
         population.subList(0, DEMAND_SIZE);
     }
